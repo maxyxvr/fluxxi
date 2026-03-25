@@ -305,79 +305,6 @@ function updateMapOrders(orders) {
 var pickerMap = null, pickerMarker = null;
 var _addrLat = null, _addrLng = null;
 
-function initPickerMap() {
-  if (pickerMap) {
-    google.maps.event.trigger(pickerMap, 'resize');
-    return;
-  }
-  var center = { lat: BASE_LAT, lng: BASE_LNG };
-  pickerMap = new google.maps.Map(document.getElementById('mapPickerMap'), {
-    center: center, zoom: 15,
-    disableDefaultUI: false,
-    zoomControl: true,
-    streetViewControl: false,
-    mapTypeControl: true,
-    mapTypeId: google.maps.MapTypeId.ROADMAP,
-  });
-
-  // Marcador de la base (referencia)
-  new google.maps.Marker({
-    position: center, map: pickerMap,
-    title: 'Base', icon: {
-      path: google.maps.SymbolPath.CIRCLE,
-      scale: 7, fillColor: '#3b82f6', fillOpacity: 1,
-      strokeColor: '#fff', strokeWeight: 2,
-    }
-  });
-
-  // Clic en el mapa para fijar pin
-  pickerMap.addListener('click', function (e) {
-    setPickerPin(e.latLng.lat(), e.latLng.lng());
-  });
-}
-
-function setPickerPin(lat, lng) {
-  _addrLat = lat; _addrLng = lng;
-  var pos = { lat: lat, lng: lng };
-  if (pickerMarker) {
-    pickerMarker.setPosition(pos);
-  } else {
-    pickerMarker = new google.maps.Marker({
-      position: pos, map: pickerMap, draggable: true,
-      animation: google.maps.Animation.DROP,
-    });
-    pickerMarker.addListener('dragend', function () {
-      var p = pickerMarker.getPosition();
-      _addrLat = p.lat(); _addrLng = p.lng();
-      document.getElementById('addressCoordHint').style.display = 'block';
-    });
-  }
-  document.getElementById('addressCoordHint').style.display = 'block';
-}
-
-function openPickerAt(lat, lng) {
-  var wrap = document.getElementById('mapPickerWrap');
-  var btn = document.getElementById('btnTogglePicker');
-  wrap.style.display = 'block';
-  btn.classList.add('active');
-  setTimeout(function () {
-    initPickerMap();
-    pickerMap.setCenter({ lat: lat, lng: lng });
-    pickerMap.setZoom(17);
-    setPickerPin(lat, lng);
-  }, 80);
-}
-
-document.getElementById('btnTogglePicker').addEventListener('click', function () {
-  var wrap = document.getElementById('mapPickerWrap');
-  var btn = document.getElementById('btnTogglePicker');
-  var open = wrap.style.display === 'block';
-  wrap.style.display = open ? 'none' : 'block';
-  btn.classList.toggle('active', !open);
-  if (!open) {
-    setTimeout(function () { initPickerMap(); google.maps.event.trigger(pickerMap, 'resize'); }, 80);
-  }
-});
 
 // ── Google Places Autocomplete ─────────────────────────────────────────────
 
@@ -405,8 +332,7 @@ function setupAddressAutocomplete() {
   autocomplete.addListener('place_changed', function () {
     var place = autocomplete.getPlace();
     if (!place.geometry || !place.geometry.location) {
-      toast('No se encontró ubicación exacta. Marca en el mapa.', 'error');
-      openPickerAt(BASE_LAT, BASE_LNG);
+      toast('No se encontró ubicación exacta. Por favor escribe de nuevo o sé más específico.', 'error');
       return;
     }
     _addrLat = place.geometry.location.lat();
