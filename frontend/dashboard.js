@@ -409,10 +409,9 @@ function setupAddressAutocomplete() {
       openPickerAt(BASE_LAT, BASE_LNG);
       return;
     }
-    var lat = place.geometry.location.lat();
-    var lng = place.geometry.location.lng();
-    openPickerAt(lat, lng);
-    toast('✓ Ubicación encontrada — ajusta el pin si es necesario');
+    _addrLat = place.geometry.location.lat();
+    _addrLng = place.geometry.location.lng();
+    toast('✓ Ubicación confirmada');
   });
 
   // Soporte para coordenadas pegadas directamente (link Google Maps)
@@ -422,9 +421,8 @@ function setupAddressAutocomplete() {
     var coordMatch = q.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/);
     if (coordMatch) {
       e.preventDefault();
-      var lat = parseFloat(coordMatch[1]);
-      var lng = parseFloat(coordMatch[2]);
-      openPickerAt(lat, lng);
+      _addrLat = parseFloat(coordMatch[1]);
+      _addrLng = parseFloat(coordMatch[2]);
       toast('✓ Coordenadas importadas');
     }
   });
@@ -439,10 +437,6 @@ function openModal() { modal.classList.add('open'); document.getElementById('fie
 function closeModal() {
   modal.classList.remove('open'); form.reset();
   _addrLat = null; _addrLng = null;
-  document.getElementById('addressCoordHint').style.display = 'none';
-  document.getElementById('mapPickerWrap').style.display = 'none';
-  document.getElementById('btnTogglePicker').classList.remove('active');
-  if (pickerMarker) { pickerMarker.setMap(null); pickerMarker = null; }
   var b = document.getElementById('submitBtn');
   b.disabled = false; b.textContent = 'Crear pedido';
 }
@@ -456,13 +450,7 @@ form.addEventListener('submit', async function (e) {
   e.preventDefault();
 
   if (!_addrLat || !_addrLng) {
-    var wrap = document.getElementById('mapPickerWrap');
-    var btn2 = document.getElementById('btnTogglePicker');
-    wrap.style.display = 'block';
-    btn2.classList.add('active');
-    setTimeout(function () { initPickerMap(); }, 80);
-    wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    toast('Marca la ubicación en el mapa antes de crear el pedido', 'error');
+    toast('Por favor, selecciona una dirección válida del autocompletado antes de crear el pedido', 'error');
     return;
   }
 
