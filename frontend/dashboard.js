@@ -2,6 +2,10 @@ const API = '';
 const BASE_LAT = 10.9059;
 const BASE_LNG = -74.7862;
 
+var mainMap = null;
+var driverMarkers = {};
+var orderMarkers = {};
+
 // ── Utils ──────────────────────────────────────────────────────────────────
 
 function toast(msg, type) {
@@ -109,6 +113,7 @@ async function loadOrders() {
     var res = await fetch(API + '/api/orders');
     var orders = await res.json();
     renderOrders(orders);
+    if (typeof updateMapOrders === 'function') updateMapOrders(orders);
     _cachedOrders = orders; // guardar para reporte
   } catch (e) { toast('Error al cargar pedidos', 'error'); }
 }
@@ -118,6 +123,7 @@ async function loadDrivers() {
     var res = await fetch(API + '/api/drivers');
     var drivers = await res.json();
     renderDrivers(drivers);
+    if (typeof updateMapDrivers === 'function') updateMapDrivers(drivers);
   } catch (e) { toast('Error al cargar domiciliarios', 'error'); }
 }
 
@@ -228,6 +234,70 @@ async function clearTodayOrders() {
     toast(json.message);
     await refreshAll();
   } catch (err) { toast(err.message, 'error'); }
+}
+
+// ── Google Maps Principal ──────────────────────────────────────────────────
+
+function initMainMap() {
+  mainMap = new google.maps.Map(document.getElementById('mainMap'), {
+    center: { lat: BASE_LAT, lng: BASE_LNG },
+    zoom: 14,
+    mapTypeId: google.maps.MapTypeId.ROADMAP
+  });
+
+  new google.maps.Marker({
+    position: { lat: BASE_LAT, lng: BASE_LNG }, map: mainMap,
+    title: 'Base', icon: {
+      path: google.maps.SymbolPath.CIRCLE, scale: 7, fillColor: '#3b82f6', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2,
+    }
+  });
+}
+
+function updateMapDrivers(drivers) {
+  if (!mainMap) return;
+  var seen = {};
+  var colors = { Available: '#22c55e', Busy: '#f59e0b', Waiting: '#f59e0b', Offline: '#64748b' };
+  drivers.forEach(function (d) {
+    if (d.status === 'Offline' || !d.lat || !d.lng) return;
+    seen[d.id] = true;
+    var pos = { lat: d.lat, lng: d.lng };
+    if (driverMarkers[d.id]) {
+      driverMarkers[d.id].setPosition(pos);
+      driverMarkers[d.id].getIcon().fillColor = colors[d.status] || '#64748b';
+    } else {
+      driverMarkers[d.id] = new google.maps.Marker({
+        position: pos, map: mainMap, title: d.name,
+        icon: { path: google.maps.SymbolPath.CIRCLE, scale: 10, fillColor: colors[d.status] || '#64748b', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 },
+        label: { text: d.name.charAt(0).toUpperCase(), color: '#fff', fontSize: '11px', fontWeight: 'bold' }
+      });
+    }
+  });
+  Object.keys(driverMarkers).forEach(function (id) {
+    if (!seen[id]) { driverMarkers[id].setMap(null); delete driverMarkers[id]; }
+  });
+}
+
+function updateMapOrders(orders) {
+  if (!mainMap) return;
+  var seen = {};
+  var colors = { Pending: '#f59e0b', Assigned: '#3b82f6', Picked: '#a855f7' };
+  orders.forEach(function (o) {
+    if (!o.lat || !o.lng || o.status === 'Delivered' || o.status === 'Cancelled') return;
+    seen[o.id] = true;
+    var pos = { lat: o.lat, lng: o.lng };
+    if (orderMarkers[o.id]) {
+      orderMarkers[o.id].setPosition(pos);
+      orderMarkers[o.id].getIcon().fillColor = colors[o.status] || '#f59e0b';
+    } else {
+      orderMarkers[o.id] = new google.maps.Marker({
+        position: pos, map: mainMap, title: o.order_code,
+        icon: { path: google.maps.SymbolPath.CIRCLE, scale: 7, fillColor: colors[o.status] || '#f59e0b', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 }
+      });
+    }
+  });
+  Object.keys(orderMarkers).forEach(function (id) {
+    if (!seen[id]) { orderMarkers[id].setMap(null); delete orderMarkers[id]; }
+  });
 }
 
 // ── Google Maps Picker (modal) ─────────────────────────────────────────────
@@ -430,7 +500,10 @@ setInterval(refreshAll, 5000);
 
 // Inicializar autocomplete cuando Google Maps cargue
 window.initGoogleMapsCallback = function () {
+  initMainMap();
   setupAddressAutocomplete();
+  refreshAll(); // Cargar la primera vez y poner los pines en el mapa
 };
 
-refreshAll();
+// No llamamos a refreshAll() directamente aquí afuera; la llamamos cuando Google Maps está listo (arriba) y cada 5s
+

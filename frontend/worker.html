@@ -1,77 +1,191 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>Fluxxi2 — Mi turno</title>
   <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    body { overflow-x: hidden; }
-    header { padding: .75rem 1rem; }
-    header .logo { font-size: 1rem; }
-    header .logo svg { width: 22px; height: 22px; }
-    main { padding: .75rem; }
-
-    #workerMap {
-      height: 55vw;
-      min-height: 220px;
-      max-height: 380px;
-      width: 100%;
-      border-radius: 0 0 12px 12px;
+    body {
+      overflow-x: hidden;
     }
 
-    .worker-header-info { display: flex; align-items: center; gap: .6rem; }
+    header {
+      padding: .75rem 1rem;
+    }
+
+    header .logo {
+      font-size: 1rem;
+    }
+
+    header .logo svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    main {
+      padding: .75rem;
+    }
+
+    .worker-header-info {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+    }
+
     .worker-avatar {
-      width: 34px; height: 34px;
+      width: 34px;
+      height: 34px;
       background: var(--surface2);
       border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 700; font-size: .85rem; color: var(--blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: .85rem;
+      color: var(--blue);
       flex-shrink: 0;
     }
-    .worker-name-block { line-height: 1.3; }
-    .worker-name-block .name { font-weight: 600; font-size: .9rem; }
-    .gps-status { font-size: .7rem; display: flex; align-items: center; gap: .3rem; color: var(--text-muted); }
-    .gps-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; }
-    .gps-dot.active { background: var(--green); animation: pulse 1.5s infinite; }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
 
-    .map-theme-btns { display: flex; gap: .3rem; flex-wrap: wrap; }
-    .map-theme-btn {
-      background: var(--surface2); border: 1px solid var(--border);
-      color: var(--text-muted); border-radius: 6px;
-      padding: .22rem .55rem; font-size: .72rem; font-weight: 500;
-      cursor: pointer; font-family: inherit; transition: all .15s; white-space: nowrap;
+    .worker-name-block {
+      line-height: 1.3;
     }
-    .map-theme-btn.active, .map-theme-btn:hover { background: var(--blue); border-color: var(--blue); color: #fff; }
 
-    .order-item { padding: .9rem 1rem; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: .5rem; }
-    .order-item:last-child { border-bottom: none; }
-    .order-item-header { display: flex; align-items: flex-start; justify-content: space-between; gap: .5rem; }
-    .order-meta { flex: 1; min-width: 0; }
-    .order-code-line { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; margin-bottom: .2rem; }
-    .order-customer { font-weight: 600; font-size: .9rem; }
+    .worker-name-block .name {
+      font-weight: 600;
+      font-size: .9rem;
+    }
+
+    .gps-status {
+      font-size: .7rem;
+      display: flex;
+      align-items: center;
+      gap: .3rem;
+      color: var(--text-muted);
+    }
+
+    .gps-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .gps-dot.active {
+      background: var(--green);
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: .4;
+      }
+    }
+
+    .order-item {
+      padding: .9rem 1rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: .5rem;
+    }
+
+    .order-item:last-child {
+      border-bottom: none;
+    }
+
+    .order-item-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: .5rem;
+    }
+
+    .order-meta {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .order-code-line {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      flex-wrap: wrap;
+      margin-bottom: .2rem;
+    }
+
+    .order-customer {
+      font-weight: 600;
+      font-size: .9rem;
+    }
+
     .order-phone {
-      display: inline-flex; align-items: center; gap: .3rem;
-      color: var(--blue); font-size: .85rem; font-weight: 500;
-      text-decoration: none; background: rgba(59,130,246,.1);
-      padding: .15rem .5rem; border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: .3rem;
+      color: var(--blue);
+      font-size: .85rem;
+      font-weight: 500;
+      text-decoration: none;
+      background: rgba(59, 130, 246, .1);
+      padding: .15rem .5rem;
+      border-radius: 999px;
     }
-    .order-item-address { font-size: .82rem; color: var(--text-muted); display: flex; align-items: flex-start; gap: .35rem; line-height: 1.4; }
-    .order-item-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
-    .action-btn-main { flex: 1; min-width: 100px; padding: .6rem 1rem; font-size: .875rem; justify-content: center; border-radius: 8px; }
-    .action-btn-map { padding: .6rem .9rem; font-size: .8rem; border-radius: 8px; }
-    .no-orders { padding: 2.5rem 1rem; text-align: center; color: var(--text-muted); }
+
+    .order-item-address {
+      font-size: .82rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: flex-start;
+      gap: .35rem;
+      line-height: 1.4;
+    }
+
+    .order-item-actions {
+      display: flex;
+      gap: .5rem;
+      flex-wrap: wrap;
+    }
+
+    .action-btn-main {
+      flex: 1;
+      min-width: 100px;
+      padding: .6rem 1rem;
+      font-size: .875rem;
+      justify-content: center;
+      border-radius: 8px;
+    }
+
+    .no-orders {
+      padding: 2.5rem 1rem;
+      text-align: center;
+      color: var(--text-muted);
+    }
 
     @media (min-width: 640px) {
-      header { padding: 1rem 2rem; }
-      main { padding: 1.5rem 2rem; }
-      #workerMap { height: 420px; max-height: none; }
-      .order-item { padding: 1rem 1.25rem; }
+      header {
+        padding: 1rem 2rem;
+      }
+
+      main {
+        padding: 1.5rem 2rem;
+      }
+
+      .order-item {
+        padding: 1rem 1.25rem;
+      }
     }
   </style>
 </head>
+
 <body>
 
   <script>
@@ -82,10 +196,12 @@
 
   <header>
     <div class="logo">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/>
-        <rect x="9" y="11" width="14" height="10" rx="2"/>
-        <circle cx="12" cy="16" r="1"/><circle cx="20" cy="16" r="1"/>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round">
+        <path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3" />
+        <rect x="9" y="11" width="14" height="10" rx="2" />
+        <circle cx="12" cy="16" r="1" />
+        <circle cx="20" cy="16" r="1" />
       </svg>
       Fluxxi2
     </div>
@@ -105,21 +221,6 @@
   </header>
 
   <main>
-    <div class="panel" style="margin-bottom:1rem;overflow:hidden">
-      <div class="panel-header" style="flex-wrap:wrap;gap:.5rem">
-        <h2 style="font-size:.9rem">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:.3rem"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-          Mi mapa
-        </h2>
-        <div class="map-theme-btns">
-          <button class="map-theme-btn active" data-theme="light">Claro</button>
-          <button class="map-theme-btn" data-theme="dark">Oscuro</button>
-          <button class="map-theme-btn" data-theme="satellite">Satelite</button>
-        </div>
-      </div>
-      <div id="workerMap"></div>
-    </div>
-
     <div class="panel">
       <div class="panel-header">
         <h2>Mis pedidos</h2>
@@ -133,7 +234,7 @@
 
   <div class="toast-container" id="toastContainer"></div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="worker.js"></script>
 </body>
+
 </html>
