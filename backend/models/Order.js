@@ -42,6 +42,18 @@ const Order = {
   updateStatus(id, status) {
     db.prepare('UPDATE orders SET status = ? WHERE id = ?').run(status, id);
     return this.getById(id);
+  },
+
+  deleteToday() {
+    // Borrar solo pedidos creados hoy
+    const result = db.prepare(
+      "DELETE FROM orders WHERE date(created_at) = date('now', 'localtime')"
+    ).run();
+    // Liberar todos los drivers que estaban ocupados
+    db.prepare(
+      "UPDATE drivers SET active_orders = 0, status = CASE WHEN status = 'Offline' THEN 'Offline' ELSE 'Available' END WHERE status IN ('Busy','Available')"
+    ).run();
+    return { deleted: result.changes };
   }
 };
 

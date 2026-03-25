@@ -137,4 +137,14 @@ function updateOrderStatus(req, res) {
   }
 }
 
-module.exports = { getOrders, createOrder, updateOrderStatus };
+function clearTodayOrders(req, res) {
+  try {
+    const result = Order.deleteToday();
+    res.json({ ok: true, deleted: result.deleted, message: `${result.deleted} pedido(s) del día eliminados` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+module.exports = { getOrders, createOrder, updateOrderStatus, clearTodayOrders };
+

@@ -2,105 +2,6 @@ const API = '';
 const BASE_LAT = 10.9059;
 const BASE_LNG = -74.7862;
 
-let map, currentTileLayer;
-const driverMarkers = {};
-const orderMarkers = {};
-
-const TILE_THEMES = {
-  light: { url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', opts: { attribution: '© CARTO', maxZoom: 19, subdomains: 'abcd' } },
-  dark: { url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', opts: { attribution: '© CARTO', maxZoom: 19, subdomains: 'abcd' } },
-  satellite: { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', opts: { attribution: '© Esri', maxZoom: 19 } },
-};
-
-function setMapTheme(theme) {
-  if (!map) return;
-  if (currentTileLayer) map.removeLayer(currentTileLayer);
-  const t = TILE_THEMES[theme] || TILE_THEMES.light;
-  currentTileLayer = L.tileLayer(t.url, t.opts).addTo(map);
-  localStorage.setItem('fluxxi_map_theme', theme);
-  document.querySelectorAll('.map-theme-btn').forEach(function (b) {
-    b.classList.toggle('active', b.dataset.theme === theme);
-  });
-}
-
-function initMap() {
-  map = L.map('map').setView([BASE_LAT, BASE_LNG], 14);
-  const savedTheme = localStorage.getItem('fluxxi_map_theme') || 'light';
-  setMapTheme(savedTheme);
-
-  const baseIcon = L.divIcon({
-    className: '',
-    html: '<div style="background:#3b82f6;border:3px solid #fff;border-radius:50%;width:18px;height:18px;box-shadow:0 2px 8px rgba(0,0,0,.5)"></div>',
-    iconSize: [18, 18], iconAnchor: [9, 9],
-  });
-  L.marker([BASE_LAT, BASE_LNG], { icon: baseIcon })
-    .addTo(map).bindPopup('<b>Base</b><br>Cl. 49 #11-15, Soledad');
-
-  document.querySelectorAll('.map-theme-btn').forEach(function (btn) {
-    btn.addEventListener('click', function () { setMapTheme(btn.dataset.theme); });
-  });
-}
-
-function driverIcon(name, status) {
-  const colors = { Available: '#22c55e', Busy: '#f59e0b', Offline: '#64748b' };
-  const bg = colors[status] || '#64748b';
-  const ini = name.split(' ').map(function (w) { return w[0]; }).join('').slice(0, 2).toUpperCase();
-  return L.divIcon({
-    className: '',
-    html: '<div style="background:' + bg + ';color:#fff;border:2px solid #fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.4);font-family:Inter,sans-serif">' + ini + '</div>',
-    iconSize: [32, 32], iconAnchor: [16, 16],
-  });
-}
-
-function orderIcon(status) {
-  const colors = { Pending: '#f59e0b', Assigned: '#3b82f6', Picked: '#a855f7', Delivered: '#22c55e', Cancelled: '#ef4444' };
-  const bg = colors[status] || '#f59e0b';
-  return L.divIcon({
-    className: '',
-    html: '<div style="background:' + bg + ';border:2px solid #fff;border-radius:4px;width:14px;height:14px;box-shadow:0 1px 4px rgba(0,0,0,.4)"></div>',
-    iconSize: [14, 14], iconAnchor: [7, 7],
-  });
-}
-
-function updateMapDrivers(drivers) {
-  if (!map) return;
-  var seen = {};
-  drivers.forEach(function (d) {
-    if (d.status === 'Offline' || !d.lat || !d.lng) return;
-    seen[d.id] = true;
-    if (driverMarkers[d.id]) {
-      driverMarkers[d.id].setLatLng([d.lat, d.lng]).setIcon(driverIcon(d.name, d.status));
-    } else {
-      driverMarkers[d.id] = L.marker([d.lat, d.lng], { icon: driverIcon(d.name, d.status) })
-        .addTo(map).bindPopup('<b>' + d.name + '</b>');
-    }
-    driverMarkers[d.id].getPopup().setContent(
-      '<b>' + d.name + '</b><br>' + (DRIVER_STATUS_LABEL[d.status] || d.status) + '<br>' + d.active_orders + ' pedido(s) activo(s)'
-    );
-  });
-  Object.keys(driverMarkers).forEach(function (id) {
-    if (!seen[id]) { driverMarkers[id].remove(); delete driverMarkers[id]; }
-  });
-}
-
-function updateMapOrders(orders) {
-  if (!map) return;
-  var seen = {};
-  orders.forEach(function (o) {
-    if (!o.lat || !o.lng || o.status === 'Delivered' || o.status === 'Cancelled') return;
-    seen[o.id] = true;
-    if (orderMarkers[o.id]) {
-      orderMarkers[o.id].setIcon(orderIcon(o.status));
-    } else {
-      orderMarkers[o.id] = L.marker([o.lat, o.lng], { icon: orderIcon(o.status) })
-        .addTo(map).bindPopup('<b>' + o.order_code + '</b><br>' + o.customer_name + '<br>' + o.address);
-    }
-  });
-  Object.keys(orderMarkers).forEach(function (id) {
-    if (!seen[id]) { orderMarkers[id].remove(); delete orderMarkers[id]; }
-  });
-}
-
 // ── Utils ──────────────────────────────────────────────────────────────────
 
 function toast(msg, type) {
@@ -139,7 +40,7 @@ function renderOrders(orders) {
   document.getElementById('statCancelled').textContent = counts.Cancelled;
 
   if (!orders.length) {
-    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><p>No hay pedidos todav\u00eda</p></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><p>No hay pedidos todavía</p></div></td></tr>';
     return;
   }
   tbody.innerHTML = orders.map(function (o) {
@@ -208,7 +109,7 @@ async function loadOrders() {
     var res = await fetch(API + '/api/orders');
     var orders = await res.json();
     renderOrders(orders);
-    updateMapOrders(orders);
+    _cachedOrders = orders; // guardar para reporte
   } catch (e) { toast('Error al cargar pedidos', 'error'); }
 }
 
@@ -217,7 +118,6 @@ async function loadDrivers() {
     var res = await fetch(API + '/api/drivers');
     var drivers = await res.json();
     renderDrivers(drivers);
-    updateMapDrivers(drivers);
   } catch (e) { toast('Error al cargar domiciliarios', 'error'); }
 }
 
@@ -283,142 +183,108 @@ async function offlineDriver(id) {
   } catch (err) { toast(err.message, 'error'); }
 }
 
-// ── Modal ──────────────────────────────────────────────────────────────────
+// ── Reporte del día ────────────────────────────────────────────────────────
 
-var modal = document.getElementById('orderModal');
-var form = document.getElementById('orderForm');
+var _cachedOrders = [];
 
-// Coordenadas confirmadas por el autocompletado
-var _addrLat = null, _addrLng = null, _addrTimer = null;
-
-// Expande abreviaturas y extrae calle + ciudad de dirección colombiana
-// "Cl. 50 # 8A-21, Soledad, Atlántico" → { street: "Calle 50", city: "Soledad" }
-function parseColAddress(raw) {
-  var s = raw
-    .replace(/\bCra?\.?\s*/gi, 'Carrera ')
-    .replace(/\bCl\.?\s*/gi, 'Calle ')
-    .replace(/\bDg\.?\s*/gi, 'Diagonal ')
-    .replace(/\bTv\.?\s*|Transv\.?\s*/gi, 'Transversal ')
-    .replace(/\bAv\.?\s*/gi, 'Avenida ')
-    .replace(/\bNo\.?\s*/gi, '#');
-
-  // Base: solo lo que está antes del #
-  var streetBase = s.split(/[#,]/)[0].replace(/\s{2,}/g, ' ').trim();
-  streetBase = streetBase.replace(/\s+\d+[a-zA-Z]?\s*-\s*\d+.*$/, '').trim();
-
-  // Cruce exacto (ej. "Calle 50 8A")
-  // 1. Quitar la ciudad y todo desde la primera coma 
-  var noCity = s.split(',')[0];
-  // 2. Extraer todo ANTES del guión (o de la placa)
-  // "Calle 50 # 8A - 21" -> "Calle 50 # 8A"
-  var crossMatch = noCity.match(/^(.*?)(?:\s*-\s*\d+.*)?$/);
-  var streetCross = crossMatch ? crossMatch[1] : noCity;
-  // Limpiar el símbolo de # para que Nominatim no se asuste
-  streetCross = streetCross.replace(/#/g, ' ').replace(/\s{2,}/g, ' ').trim();
-
-  // Ciudad: primera parte después de la primera coma
-  var afterComma = raw.split(',');
-  var city = afterComma.length > 1 ? afterComma[1].trim() : 'Soledad';
-  // Quitar "Atlántico", "Colombia", etc. que no son ciudad
-  city = city.replace(/atl[aá]ntico|colombia/gi, '').trim() || 'Soledad';
-
-  return { streetBase: streetBase, streetCross: streetCross, city: city };
+function downloadDailyReport() {
+  var today = new Date().toLocaleDateString('es-CO');
+  var rows = [['Código', 'Cliente', 'Teléfono', 'Dirección', 'Domiciliario', 'Estado', 'Hora']];
+  var todayStr = new Date().toISOString().slice(0, 10);
+  var todayOrders = _cachedOrders.filter(function (o) {
+    return o.created_at && o.created_at.slice(0, 10) === todayStr;
+  });
+  if (!todayOrders.length) { toast('No hay pedidos del día para exportar', 'error'); return; }
+  todayOrders.forEach(function (o) {
+    rows.push([
+      o.order_code,
+      o.customer_name,
+      o.customer_phone || '',
+      '"' + (o.address || '').replace(/"/g, '""') + '"',
+      o.driver_name || 'Sin asignar',
+      STATUS_LABELS[o.status] || o.status,
+      formatTime(o.created_at),
+    ]);
+  });
+  var csv = rows.map(function (r) { return r.join(','); }).join('\n');
+  var blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  var url = URL.createObjectURL(blob);
+  var link = document.createElement('a');
+  link.href = url;
+  link.download = 'reporte_' + todayStr + '.csv';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  toast('Reporte descargado (' + todayOrders.length + ' pedidos)');
 }
 
-// Búsqueda estructurada: Nominatim entiende mejor street + city separados
-function nominatimStructured(street, city) {
-  var url = 'https://nominatim.openstreetmap.org/search?' +
-    'street=' + encodeURIComponent(street) +
-    '&city=' + encodeURIComponent(city) +
-    '&state=Atl%C3%A1ntico&country=Colombia' +
-    '&format=json&limit=5&addressdetails=1';
-  return fetch(url, { headers: { 'Accept-Language': 'es' } }).then(function (r) { return r.json(); });
+async function clearTodayOrders() {
+  if (!confirm('¿Eliminar todos los pedidos de hoy? Esta acción no se puede deshacer.')) return;
+  try {
+    var res = await fetch(API + '/api/orders/today', { method: 'DELETE' });
+    var json = await res.json();
+    if (!res.ok) throw new Error(json.error);
+    toast(json.message);
+    await refreshAll();
+  } catch (err) { toast(err.message, 'error'); }
 }
 
-// Búsqueda libre como fallback
-function nominatimFree(q) {
-  var url = 'https://nominatim.openstreetmap.org/search?q=' +
-    encodeURIComponent(q + ', Atlántico, Colombia') +
-    '&format=json&limit=5&countrycodes=co&addressdetails=1' +
-    '&viewbox=-74.95,11.12,-74.68,10.82';
-  return fetch(url, { headers: { 'Accept-Language': 'es' } }).then(function (r) { return r.json(); });
-}
+// ── Google Maps Picker (modal) ─────────────────────────────────────────────
 
-function setupAddressAutocomplete() {
-  var input = document.getElementById('fieldAddress');
-  var hint = document.getElementById('addressCoordHint');
+var pickerMap = null, pickerMarker = null;
+var _addrLat = null, _addrLng = null;
 
-  // Ocultar sugerencias si existían
-  var box = document.getElementById('addressSuggestions');
-  if (box) box.style.display = 'none';
+function initPickerMap() {
+  if (pickerMap) {
+    google.maps.event.trigger(pickerMap, 'resize');
+    return;
+  }
+  var center = { lat: BASE_LAT, lng: BASE_LNG };
+  pickerMap = new google.maps.Map(document.getElementById('mapPickerMap'), {
+    center: center, zoom: 15,
+    disableDefaultUI: false,
+    zoomControl: true,
+    streetViewControl: false,
+    mapTypeControl: true,
+    mapTypeId: google.maps.MapTypeId.ROADMAP,
+  });
 
-  input.addEventListener('keydown', async function (e) {
-    if (e.key === 'Enter') {
-      e.preventDefault(); // Evitar envío del formulario
-
-      var q = input.value.trim();
-      if (q.length < 5) {
-        toast('Ingresa una dirección más detallada para validar', 'error');
-        return;
-      }
-
-      var oldText = input.value;
-      input.disabled = true;
-
-      // 0. Superpoder: ¿Es un link de Google Maps o coordenadas crudas?
-      // Match a "10.985, -74.812" o link de gmaps ".../@10.985,-74.812,17z"
-      var coordMatch = q.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/);
-      if (coordMatch && !isNaN(parseFloat(coordMatch[1])) && !isNaN(parseFloat(coordMatch[2]))) {
-        var lat = parseFloat(coordMatch[1]);
-        var lng = parseFloat(coordMatch[2]);
-        input.disabled = false;
-        openPickerAt(lat, lng);
-        toast('✓ Coordenadas exactas importadas');
-        return;
-      }
-
-      try {
-        var parsed = parseColAddress(q);
-
-        // Intento 1: Alta precisión con cruce exacto en texto libre (ej. "Calle 50 8A, Soledad")
-        var data = await nominatimFree(parsed.streetCross + ', ' + parsed.city);
-
-        // Intento 2: Búsqueda estructurada del cruce
-        if (!data.length) data = await nominatimStructured(parsed.streetCross, parsed.city);
-
-        // Intento 3: Fallback a la calle base libre (ej. "Calle 50, Soledad")
-        if (!data.length) data = await nominatimFree(parsed.streetBase + ', ' + parsed.city);
-
-        // Intento 4: Fallback removiendo lo que quede de números extras (emergencia extrema)
-        if (!data.length) {
-          var streetClean = parsed.streetBase.replace(/\s+\d.*$/, '');
-          if (streetClean.length > 5) data = await nominatimFree(streetClean + ', ' + parsed.city);
-        }
-
-        if (data && data.length > 0) {
-          var lat = parseFloat(data[0].lat);
-          var lng = parseFloat(data[0].lon);
-          openPickerAt(lat, lng);
-          toast('Verifica la ubicación en el mapa');
-        } else {
-          toast('No se encontró exacto. Mueve el pin manualmente.', 'error');
-          openPickerAt(BASE_LAT, BASE_LNG);
-        }
-      } catch (err) {
-        toast('Error buscando la ubicación', 'error');
-      } finally {
-        input.disabled = false;
-        input.focus();
-      }
+  // Marcador de la base (referencia)
+  new google.maps.Marker({
+    position: center, map: pickerMap,
+    title: 'Base', icon: {
+      path: google.maps.SymbolPath.CIRCLE,
+      scale: 7, fillColor: '#3b82f6', fillOpacity: 1,
+      strokeColor: '#fff', strokeWeight: 2,
     }
+  });
+
+  // Clic en el mapa para fijar pin
+  pickerMap.addListener('click', function (e) {
+    setPickerPin(e.latLng.lat(), e.latLng.lng());
   });
 }
 
-// ── Mapa picker (dentro del modal) ─────────────────────────────────────────
+function setPickerPin(lat, lng) {
+  _addrLat = lat; _addrLng = lng;
+  var pos = { lat: lat, lng: lng };
+  if (pickerMarker) {
+    pickerMarker.setPosition(pos);
+  } else {
+    pickerMarker = new google.maps.Marker({
+      position: pos, map: pickerMap, draggable: true,
+      animation: google.maps.Animation.DROP,
+    });
+    pickerMarker.addListener('dragend', function () {
+      var p = pickerMarker.getPosition();
+      _addrLat = p.lat(); _addrLng = p.lng();
+      document.getElementById('addressCoordHint').style.display = 'block';
+    });
+  }
+  document.getElementById('addressCoordHint').style.display = 'block';
+}
 
-var pickerMap = null, pickerMarker = null;
-
-// Abre el picker centrado en lat/lng y pone el pin ahí
 function openPickerAt(lat, lng) {
   var wrap = document.getElementById('mapPickerWrap');
   var btn = document.getElementById('btnTogglePicker');
@@ -426,44 +292,10 @@ function openPickerAt(lat, lng) {
   btn.classList.add('active');
   setTimeout(function () {
     initPickerMap();
-    pickerMap.invalidateSize();
-    pickerMap.setView([lat, lng], 17);
+    pickerMap.setCenter({ lat: lat, lng: lng });
+    pickerMap.setZoom(17);
     setPickerPin(lat, lng);
   }, 80);
-}
-
-function initPickerMap() {
-  if (pickerMap) { setTimeout(function () { pickerMap.invalidateSize(); }, 50); return; }
-  pickerMap = L.map('mapPickerMap', { zoomControl: true }).setView([BASE_LAT, BASE_LNG], 15);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-    { attribution: '© CARTO', maxZoom: 19, subdomains: 'abcd' }).addTo(pickerMap);
-
-  // Marcador de la base (referencia)
-  var baseIcon = L.divIcon({
-    className: '',
-    html: '<div style="background:#3b82f6;border:2px solid #fff;border-radius:50%;width:12px;height:12px"></div>',
-    iconSize: [12, 12], iconAnchor: [6, 6],
-  });
-  L.marker([BASE_LAT, BASE_LNG], { icon: baseIcon }).addTo(pickerMap)
-    .bindTooltip('Base', { permanent: false });
-
-  pickerMap.on('click', function (e) { setPickerPin(e.latlng.lat, e.latlng.lng); });
-}
-
-function setPickerPin(lat, lng) {
-  _addrLat = lat; _addrLng = lng;
-  var hint = document.getElementById('addressCoordHint');
-  if (pickerMarker) {
-    pickerMarker.setLatLng([lat, lng]);
-  } else {
-    pickerMarker = L.marker([lat, lng], { draggable: true }).addTo(pickerMap);
-    pickerMarker.on('dragend', function () {
-      var p = pickerMarker.getLatLng();
-      _addrLat = p.lat; _addrLng = p.lng;
-      hint.style.display = 'block';
-    });
-  }
-  hint.style.display = 'block';
 }
 
 document.getElementById('btnTogglePicker').addEventListener('click', function () {
@@ -473,23 +305,74 @@ document.getElementById('btnTogglePicker').addEventListener('click', function ()
   wrap.style.display = open ? 'none' : 'block';
   btn.classList.toggle('active', !open);
   if (!open) {
-    setTimeout(function () {
-      initPickerMap();
-      pickerMap.invalidateSize();
-    }, 80);
+    setTimeout(function () { initPickerMap(); google.maps.event.trigger(pickerMap, 'resize'); }, 80);
   }
 });
+
+// ── Google Places Autocomplete ─────────────────────────────────────────────
+
+function setupAddressAutocomplete() {
+  // Esperar a que Google Maps esté listo
+  if (typeof google === 'undefined' || !google.maps || !google.maps.places) {
+    setTimeout(setupAddressAutocomplete, 300);
+    return;
+  }
+
+  var input = document.getElementById('fieldAddress');
+  var autocomplete = new google.maps.places.Autocomplete(input, {
+    componentRestrictions: { country: 'co' },
+    fields: ['geometry', 'formatted_address', 'name'],
+    types: ['address'],
+  });
+
+  // Bias hacia Soledad/Barranquilla Atlántico
+  var bounds = new google.maps.LatLngBounds(
+    { lat: 10.75, lng: -74.95 },
+    { lat: 11.10, lng: -74.65 }
+  );
+  autocomplete.setBounds(bounds);
+
+  autocomplete.addListener('place_changed', function () {
+    var place = autocomplete.getPlace();
+    if (!place.geometry || !place.geometry.location) {
+      toast('No se encontró ubicación exacta. Marca en el mapa.', 'error');
+      openPickerAt(BASE_LAT, BASE_LNG);
+      return;
+    }
+    var lat = place.geometry.location.lat();
+    var lng = place.geometry.location.lng();
+    openPickerAt(lat, lng);
+    toast('✓ Ubicación encontrada — ajusta el pin si es necesario');
+  });
+
+  // Soporte para coordenadas pegadas directamente (link Google Maps)
+  input.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter') return;
+    var q = input.value.trim();
+    var coordMatch = q.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/);
+    if (coordMatch) {
+      e.preventDefault();
+      var lat = parseFloat(coordMatch[1]);
+      var lng = parseFloat(coordMatch[2]);
+      openPickerAt(lat, lng);
+      toast('✓ Coordenadas importadas');
+    }
+  });
+}
+
+// ── Modal ──────────────────────────────────────────────────────────────────
+
+var modal = document.getElementById('orderModal');
+var form = document.getElementById('orderForm');
 
 function openModal() { modal.classList.add('open'); document.getElementById('fieldCode').focus(); }
 function closeModal() {
   modal.classList.remove('open'); form.reset();
   _addrLat = null; _addrLng = null;
-  document.getElementById('addressSuggestions').style.display = 'none';
   document.getElementById('addressCoordHint').style.display = 'none';
   document.getElementById('mapPickerWrap').style.display = 'none';
   document.getElementById('btnTogglePicker').classList.remove('active');
-  // Reset pin del picker
-  if (pickerMarker) { pickerMarker.remove(); pickerMarker = null; }
+  if (pickerMarker) { pickerMarker.setMap(null); pickerMarker = null; }
   var b = document.getElementById('submitBtn');
   b.disabled = false; b.textContent = 'Crear pedido';
 }
@@ -502,18 +385,13 @@ modal.addEventListener('click', function (e) { if (e.target === modal) closeModa
 form.addEventListener('submit', async function (e) {
   e.preventDefault();
 
-  // Requiere ubicación confirmada en el mapa
   if (!_addrLat || !_addrLng) {
-    // Abrir el mapa picker automáticamente
     var wrap = document.getElementById('mapPickerWrap');
     var btn2 = document.getElementById('btnTogglePicker');
     wrap.style.display = 'block';
     btn2.classList.add('active');
-    setTimeout(function () {
-      initPickerMap();
-      pickerMap.invalidateSize();
-    }, 80);
-    document.getElementById('btnTogglePicker').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    setTimeout(function () { initPickerMap(); }, 80);
+    wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     toast('Marca la ubicación en el mapa antes de crear el pedido', 'error');
     return;
   }
@@ -541,18 +419,18 @@ document.getElementById('btnSeed').addEventListener('click', seedDrivers);
 document.getElementById('btnLogout').addEventListener('click', function () {
   sessionStorage.clear(); window.location.href = 'login.html';
 });
+document.getElementById('btnDownloadReport').addEventListener('click', downloadDailyReport);
+document.getElementById('btnClearToday').addEventListener('click', clearTodayOrders);
 
-// ── Auto-refresh ───────────────────────────────────────────────────────────
+// ── Polling en vivo cada 5 s ───────────────────────────────────────────────
 
-var countdown = 15;
-setInterval(async function () {
-  countdown--;
-  document.getElementById('countdown').textContent = countdown;
-  if (countdown <= 0) { countdown = 15; await refreshAll(); }
-}, 1000);
+setInterval(refreshAll, 5000);
 
 // ── Init ───────────────────────────────────────────────────────────────────
 
-initMap();
-setupAddressAutocomplete();
+// Inicializar autocomplete cuando Google Maps cargue
+window.initGoogleMapsCallback = function () {
+  setupAddressAutocomplete();
+};
+
 refreshAll();

@@ -73,7 +73,7 @@ const Driver = {
     const count = db.prepare('SELECT COUNT(*) as c FROM drivers').get().c;
     if (count > 0) return { seeded: false, message: 'Ya existen domiciliarios' };
 
-    const names = ['Carlos', 'Miguel', 'Andres'];
+    const names = ['Hans', 'Brance', 'Juan'];
     const insert = db.prepare("INSERT INTO drivers (name, status) VALUES (?, 'Offline')");
     const insertMany = db.transaction((names) => {
       for (const name of names) insert.run(name);

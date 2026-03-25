@@ -5,10 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Fluxxi2 — Dashboard</title>
   <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    #map { height: 380px; width: 100%; border-radius: 0 0 12px 12px; }
-
     .addr-suggestions {
       position: absolute; top: 100%; left: 0; right: 0;
       background: var(--surface); border: 1px solid var(--border);
@@ -25,7 +22,7 @@
     .addr-suggestion .addr-main { font-weight: 500; }
     .addr-suggestion .addr-sub { font-size: .75rem; color: var(--text-muted); margin-top:.1rem; }
 
-    #mapPickerMap { height: 220px; border-radius: 8px; border: 1px solid var(--border); margin-top: .5rem; cursor: crosshair; }
+    #mapPickerMap { height: 220px; border-radius: 8px; border: 1px solid var(--border); margin-top: .5rem; }
     #mapPickerWrap { display: none; }
     #btnTogglePicker {
       background: var(--blue); border: none; color: #fff;
@@ -33,25 +30,21 @@
       cursor: pointer; margin-top: .5rem; font-weight: 500; width: 100%; transition: opacity .15s;
     }
     #btnTogglePicker.active { opacity: .8; }
-    .map-panel { overflow: hidden; }
 
-    .map-theme-btns { display: flex; gap: .3rem; }
-    .map-theme-btn {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      border-radius: 6px;
-      padding: .25rem .6rem;
-      font-size: .75rem;
-      font-weight: 500;
-      cursor: pointer;
-      font-family: inherit;
-      transition: all .15s;
+    .drivers-panel-actions {
+      display: flex; gap: .5rem; flex-wrap: wrap; padding: .75rem 1rem;
+      border-top: 1px solid var(--border); background: var(--surface2);
+      border-radius: 0 0 12px 12px;
     }
-    .map-theme-btn.active, .map-theme-btn:hover {
-      background: var(--blue);
-      border-color: var(--blue);
-      color: #fff;
+    .live-dot {
+      display: inline-block; width: 8px; height: 8px;
+      background: var(--green); border-radius: 50%;
+      animation: livePulse 1.8s infinite;
+    }
+    @keyframes livePulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
+    .live-tag {
+      display: flex; align-items: center; gap: .35rem;
+      font-size: .75rem; color: var(--green); font-weight: 500;
     }
   </style>
 </head>
@@ -73,7 +66,7 @@
       Fluxxi2
     </div>
     <div class="actions">
-      <span class="refresh-indicator">Actualiza en <span id="countdown">15</span>s</span>
+      <div class="live-tag"><span class="live-dot"></span> En vivo</div>
       <button class="btn btn-ghost btn-sm" id="btnSeed">Sembrar drivers</button>
       <button class="btn btn-primary" id="btnNewOrder">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -97,22 +90,6 @@
 
     <div class="panels" style="margin-bottom:1.5rem">
 
-      <!-- MAPA -->
-      <div class="panel map-panel">
-        <div class="panel-header">
-          <h2>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:.3rem"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            Mapa de operaciones
-          </h2>
-          <div class="map-theme-btns">
-            <button class="map-theme-btn active" data-theme="light">☀ Claro</button>
-            <button class="map-theme-btn" data-theme="dark">🌙 Oscuro</button>
-            <button class="map-theme-btn" data-theme="satellite">🛰 Satélite</button>
-          </div>
-        </div>
-        <div id="map"></div>
-      </div>
-
       <!-- DRIVERS -->
       <div class="panel">
         <div class="panel-header">
@@ -122,7 +99,16 @@
         <div class="drivers-list" id="driversList">
           <div class="empty-state"><p>Cargando...</p></div>
         </div>
+        <div class="drivers-panel-actions">
+          <button class="btn btn-ghost btn-sm" id="btnDownloadReport">
+            ⬇ Descargar reporte del día
+          </button>
+          <button class="btn btn-ghost btn-sm" id="btnClearToday" style="color:var(--red);border-color:var(--red)">
+            🗑 Limpiar día
+          </button>
+        </div>
       </div>
+
     </div>
 
     <!-- ORDERS -->
@@ -179,7 +165,7 @@
             <div id="mapPickerWrap">
               <div id="mapPickerMap"></div>
               <div style="font-size:.72rem;color:var(--text-muted);margin-top:.3rem;text-align:center">
-                Clic o arrastra el pin para fijar el punto exacto de entrega
+                Clic en el mapa para fijar el punto exacto de entrega
               </div>
             </div>
             <div id="addressCoordHint" style="font-size:.72rem;margin-top:.3rem;color:var(--green);display:none">
@@ -197,7 +183,8 @@
 
   <div class="toast-container" id="toastContainer"></div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Google Maps SDK — reemplaza TU_API_KEY_AQUI con tu clave real -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAlr7zhQQ-nmvkqWhiQF7DLQGR1-inuj_o&libraries=places&language=es&region=CO" async defer></script>
   <script src="dashboard.js"></script>
 </body>
 </html>
