@@ -6,127 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Fluxxi2 — Dashboard</title>
   <link rel="stylesheet" href="styles.css" />
-  <style>
-    .addr-suggestions {
-      position: absolute;
-      top: 100%;
-      left: 0;
-      right: 0;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-top: none;
-      border-radius: 0 0 8px 8px;
-      z-index: 3000;
-      max-height: 210px;
-      overflow-y: auto;
-      display: none;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, .25);
-    }
-
-    .addr-suggestion {
-      padding: .6rem .8rem;
-      font-size: .82rem;
-      cursor: pointer;
-      border-bottom: 1px solid var(--border);
-      line-height: 1.4;
-      color: var(--text);
-    }
-
-    .addr-suggestion:last-child {
-      border-bottom: none;
-    }
-
-    .addr-suggestion:hover {
-      background: var(--surface2);
-    }
-
-    .addr-suggestion .addr-main {
-      font-weight: 500;
-    }
-
-    .addr-suggestion .addr-sub {
-      font-size: .75rem;
-      color: var(--text-muted);
-      margin-top: .1rem;
-    }
-
-    #mapPickerMap {
-      height: 220px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      margin-top: .5rem;
-    }
-
-    #mapPickerWrap {
-      display: none;
-    }
-
-    #btnTogglePicker {
-      background: var(--blue);
-      border: none;
-      color: #fff;
-      border-radius: 6px;
-      padding: .4rem .75rem;
-      font-size: .8rem;
-      font-family: inherit;
-      cursor: pointer;
-      margin-top: .5rem;
-      font-weight: 500;
-      width: 100%;
-      transition: opacity .15s;
-    }
-
-    #btnTogglePicker.active {
-      opacity: .8;
-    }
-
-    .drivers-panel-actions {
-      display: flex;
-      gap: .5rem;
-      flex-wrap: wrap;
-      padding: .75rem 1rem;
-      border-top: 1px solid var(--border);
-      background: var(--surface2);
-      border-radius: 0 0 12px 12px;
-    }
-
-    .live-dot {
-      display: inline-block;
-      width: 8px;
-      height: 8px;
-      background: var(--green);
-      border-radius: 50%;
-      animation: livePulse 1.8s infinite;
-    }
-
-    @keyframes livePulse {
-
-      0%,
-      100% {
-        opacity: 1;
-        transform: scale(1)
-      }
-
-      50% {
-        opacity: .4;
-        transform: scale(.7)
-      }
-    }
-
-    .live-tag {
-      display: flex;
-      align-items: center;
-      gap: .35rem;
-      font-size: .75rem;
-      color: var(--green);
-      font-weight: 500;
-    }
-
-    /* Traer el autocompletado de Google Maps al frente (sobre el modal) */
-    .pac-container {
-      z-index: 10000 !important;
-    }
-  </style>
 </head>
 
 <body>
@@ -137,129 +16,252 @@
     }
   </script>
 
-  <header>
-    <div class="logo">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-        stroke-linejoin="round">
-        <path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3" />
-        <rect x="9" y="11" width="14" height="10" rx="2" />
-        <circle cx="12" cy="16" r="1" />
-        <circle cx="20" cy="16" r="1" />
-      </svg>
+  <!-- ─── SIDEBAR ─── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3" />
+          <rect x="9" y="11" width="14" height="10" rx="2" />
+          <circle cx="12" cy="16" r="1" />
+          <circle cx="20" cy="16" r="1" />
+        </svg>
+      </div>
       Fluxxi2
     </div>
-    <div class="actions">
-      <div class="live-tag"><span class="live-dot"></span> En vivo</div>
-      <button class="btn btn-ghost btn-sm" id="btnSeed">Sembrar drivers</button>
-      <button class="btn btn-primary" id="btnNewOrder">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-          stroke-linecap="round" stroke-linejoin="round">
-          <line x1="12" y1="5" x2="12" y2="19" />
-          <line x1="5" y1="12" x2="19" y2="12" />
+
+    <nav class="sidebar-nav">
+      <div class="sidebar-label">Principal</div>
+
+      <a class="sidebar-link active" href="dashboard.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+          <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+        </svg>
+        Dashboard
+      </a>
+
+      <div class="sidebar-label">Acciones</div>
+
+      <button class="sidebar-link" id="btnNewOrder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
         </svg>
         Nuevo Pedido
       </button>
-      <button class="btn btn-ghost btn-sm" id="btnLogout">Salir</button>
+
+      <button class="sidebar-link" id="btnSeed">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        Sembrar Drivers
+      </button>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="live-tag">
+        <span class="live-dot"></span> En vivo
+      </div>
+      <button class="sidebar-link" id="btnLogout" style="color:var(--red)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        Cerrar sesión
+      </button>
     </div>
-  </header>
+  </aside>
 
-  <main>
+  <!-- ─── MAIN WRAPPER ─── -->
+  <div class="app-wrapper">
 
-    <div class="stats">
-      <div class="stat-card">
-        <div class="label">Total pedidos</div>
-        <div class="value" id="statTotal">—</div>
+    <!-- TOPBAR -->
+    <header>
+      <div class="header-left">
+        <div class="header-title">Panel de operaciones</div>
+        <div class="header-subtitle">Gestión de domicilios en tiempo real</div>
       </div>
-      <div class="stat-card">
-        <div class="label">Pendientes</div>
-        <div class="value" style="color:var(--yellow)" id="statPending">—</div>
+      <div class="actions">
+        <button class="btn btn-ghost btn-sm" id="btnDownloadReport">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Reporte
+        </button>
+        <button class="btn btn-danger btn-sm" id="btnClearToday">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+          </svg>
+          Limpiar día
+        </button>
+        <button class="btn btn-primary" id="btnNewOrderHeader">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Nuevo Pedido
+        </button>
       </div>
-      <div class="stat-card">
-        <div class="label">En curso</div>
-        <div class="value" style="color:var(--blue)" id="statActive">—</div>
-      </div>
-      <div class="stat-card">
-        <div class="label">Entregados</div>
-        <div class="value" style="color:var(--green)" id="statDelivered">—</div>
-      </div>
-      <div class="stat-card">
-        <div class="label">Cancelados</div>
-        <div class="value" style="color:var(--red)" id="statCancelled">—</div>
-      </div>
-    </div>
+    </header>
 
-    <div class="panels" style="margin-bottom:1.5rem">
+    <main>
 
-      <!-- MAPA -->
-      <div class="panel map-panel">
-        <div class="panel-header">
-          <h2>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              style="vertical-align:middle;margin-right:.3rem">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-              <circle cx="12" cy="10" r="3" />
+      <!-- STATS -->
+      <div class="stats">
+        <div class="stat-card" style="--card-accent:#6c63ff; --card-icon-bg:rgba(108,99,255,.15)">
+          <div class="stat-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#6c63ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/>
+              <path d="M16 10a4 4 0 01-8 0"/>
             </svg>
-            Mapa de operaciones
-          </h2>
+          </div>
+          <div class="label">Total pedidos</div>
+          <div class="value" id="statTotal">—</div>
         </div>
-        <div id="mainMap" style="height: 380px; width: 100%; border-radius: 0 0 12px 12px;"></div>
+
+        <div class="stat-card" style="--card-accent:#f5a623; --card-icon-bg:rgba(245,166,35,.12)">
+          <div class="stat-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#f5a623" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+          </div>
+          <div class="label">Pendientes</div>
+          <div class="value" style="color:var(--yellow)" id="statPending">—</div>
+        </div>
+
+        <div class="stat-card" style="--card-accent:#4d8ef0; --card-icon-bg:rgba(77,142,240,.12)">
+          <div class="stat-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#4d8ef0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 8v4l3 3"/>
+            </svg>
+          </div>
+          <div class="label">En curso</div>
+          <div class="value" style="color:var(--blue)" id="statActive">—</div>
+        </div>
+
+        <div class="stat-card" style="--card-accent:#2ecc72; --card-icon-bg:rgba(46,204,114,.12)">
+          <div class="stat-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#2ecc72" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </div>
+          <div class="label">Entregados</div>
+          <div class="value" style="color:var(--green)" id="statDelivered">—</div>
+        </div>
+
+        <div class="stat-card" style="--card-accent:#f05252; --card-icon-bg:rgba(240,82,82,.12)">
+          <div class="stat-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#f05252" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+            </svg>
+          </div>
+          <div class="label">Cancelados</div>
+          <div class="value" style="color:var(--red)" id="statCancelled">—</div>
+        </div>
       </div>
 
-      <!-- DRIVERS -->
-      <div class="panel">
-        <div class="panel-header">
-          <h2>Domiciliarios</h2>
-          <span class="count" id="driversCount">0</span>
+      <div class="panels" style="margin-bottom:1.5rem">
+
+        <!-- MAPA -->
+        <div class="panel map-panel">
+          <div class="panel-header">
+            <h2>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                <circle cx="12" cy="10" r="3"/>
+              </svg>
+              Mapa de operaciones
+            </h2>
+          </div>
+          <div id="mainMap" style="height: 400px; width: 100%; border-radius: 0 0 14px 14px;"></div>
         </div>
-        <div class="drivers-list" id="driversList">
-          <div class="empty-state">
-            <p>Cargando...</p>
+
+        <!-- DRIVERS -->
+        <div class="panel">
+          <div class="panel-header">
+            <h2>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+              Domiciliarios
+            </h2>
+            <span class="count" id="driversCount">0</span>
+          </div>
+          <div class="drivers-list" id="driversList">
+            <div class="empty-state">
+              <p>Cargando...</p>
+            </div>
+          </div>
+          <div class="drivers-panel-actions">
+            <button class="btn btn-ghost btn-sm" id="btnDownloadReportPanel">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Descargar reporte
+            </button>
+            <button class="btn btn-danger btn-sm" id="btnClearTodayPanel">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+              </svg>
+              Limpiar día
+            </button>
           </div>
         </div>
-        <div class="drivers-panel-actions">
-          <button class="btn btn-ghost btn-sm" id="btnDownloadReport">
-            ⬇ Descargar reporte del día
-          </button>
-          <button class="btn btn-ghost btn-sm" id="btnClearToday" style="color:var(--red);border-color:var(--red)">
-            🗑 Limpiar día
-          </button>
+
+      </div>
+
+      <!-- ORDERS TABLE -->
+      <div class="panel">
+        <div class="panel-header">
+          <h2>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 11l3 3L22 4"/>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            </svg>
+            Pedidos
+          </h2>
+          <span class="count" id="ordersCount">0</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Cliente</th>
+                <th>Dirección</th>
+                <th>Domiciliario</th>
+                <th>Estado</th>
+                <th>Hora</th>
+              </tr>
+            </thead>
+            <tbody id="ordersBody">
+              <tr>
+                <td colspan="6">
+                  <div class="empty-state">
+                    <p>Cargando pedidos...</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
-    </div>
-
-    <!-- ORDERS -->
-    <div class="panel">
-      <div class="panel-header">
-        <h2>Pedidos</h2>
-        <span class="count" id="ordersCount">0</span>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Código</th>
-              <th>Cliente</th>
-              <th>Dirección</th>
-              <th>Domiciliario</th>
-              <th>Estado</th>
-              <th>Hora</th>
-            </tr>
-          </thead>
-          <tbody id="ordersBody">
-            <tr>
-              <td colspan="6">
-                <div class="empty-state">
-                  <p>Cargando pedidos...</p>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-  </main>
+    </main>
+  </div><!-- end app-wrapper -->
 
   <!-- MODAL -->
   <div class="modal-backdrop" id="orderModal">
@@ -285,8 +287,7 @@
           <div class="form-group">
             <label>Dirección de entrega *</label>
             <div id="addressAutocompleteWrap" style="position:relative">
-              <input type="text" id="fieldAddress" placeholder="Escribe la dirección para buscar..." required
-                autocomplete="off" />
+              <input type="text" id="fieldAddress" placeholder="Escribe la dirección para buscar..." required autocomplete="off" />
               <div id="addressSuggestions" class="addr-suggestions"></div>
             </div>
           </div>
@@ -301,8 +302,18 @@
 
   <div class="toast-container" id="toastContainer"></div>
 
-  <!-- Google Maps SDK — reemplaza TU_API_KEY_AQUI con tu clave real -->
   <script src="dashboard.js"></script>
+  <script>
+    // Los botones del header (btnDownloadReport, btnClearToday) ya están
+    // escuchados directamente por dashboard.js. Solo necesitamos conectar
+    // el botón extra del header para "Nuevo Pedido".
+    document.getElementById('btnNewOrderHeader').addEventListener('click', function() {
+      document.getElementById('orderModal').classList.add('open');
+    });
+    // Conectar los botones duplicados del panel lateral al mismo handler
+    document.getElementById('btnDownloadReportPanel').addEventListener('click', downloadDailyReport);
+    document.getElementById('btnClearTodayPanel').addEventListener('click', clearTodayOrders);
+  </script>
   <script
     src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCAswimK497YgHgRK80ebrHhuiu0-CEV8g&libraries=places&language=es&region=CO&callback=initGoogleMapsCallback"
     async defer></script>
