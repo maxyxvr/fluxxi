@@ -330,6 +330,37 @@
       document.getElementById('orderModal').classList.add('open');
     });
 
+    // Panel modal de domiciliarios
+    var driversModal = document.getElementById('driversModal');
+    var btnShowDrivers = document.getElementById('btnShowDrivers');
+    var driversModalClose = document.getElementById('driversModalClose');
+
+    if (btnShowDrivers) {
+      btnShowDrivers.addEventListener('click', function() {
+        renderDriversModal();
+        if (driversModal) driversModal.classList.add('open');
+      });
+    }
+
+    if (driversModalClose) {
+      driversModalClose.addEventListener('click', function() {
+        driversModal.classList.remove('open');
+      });
+    }
+
+    if (driversModal) {
+      driversModal.addEventListener('click', function(e) {
+        if (e.target === driversModal) driversModal.classList.remove('open');
+      });
+    }
+    
+    // Botones del panel lateral de DOMICILIARIOS
+    var btnDownloadReportPanel = document.getElementById('btnDownloadReportPanel');
+    if (btnDownloadReportPanel) btnDownloadReportPanel.addEventListener('click', function() { if(typeof downloadDailyReport === 'function') downloadDailyReport(); });
+
+    var btnClearTodayPanel = document.getElementById('btnClearTodayPanel');
+    if (btnClearTodayPanel) btnClearTodayPanel.addEventListener('click', function() { if(typeof clearTodayOrders === 'function') clearTodayOrders(); });
+
     // Delegamos la renderización del modal de resumen a una función global en dashboard.js
     function renderDriversModal() {
       var body = document.getElementById('driversModalBody');
