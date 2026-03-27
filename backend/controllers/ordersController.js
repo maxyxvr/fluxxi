@@ -1,4 +1,5 @@
 const Order = require('../models/Order');
+const Driver = require('../models/Driver');
 const { assignDriver, releaseDriver } = require('../services/assignmentService');
 const https = require('https');
 
@@ -146,5 +147,35 @@ function clearTodayOrders(req, res) {
   }
 }
 
-module.exports = { getOrders, createOrder, updateOrderStatus, clearTodayOrders };
+function assignDriverManual(req, res) {
+  const { id } = req.params;
+  const { driver_id } = req.body;
+
+  if (!driver_id) return res.status(400).json({ error: 'driver_id es requerido' });
+
+  try {
+    const order = Order.getById(id);
+    if (!order) return res.status(404).json({ error: 'Pedido no encontrado' });
+
+    const driver = Driver.getById(driver_id);
+    if (!driver) return res.status(404).json({ error: 'Driver no encontrado' });
+
+    // Si el pedido ya tenía otro driver, liberar conteo del anterior
+    if (order.driver_id && order.driver_id !== driver_id) {
+      releaseDriver(order.id);
+    }
+
+    // Asignar el nuevo driver
+    const updated = Order.assignDriver(id, driver_id);
+
+    // Incrementar active_orders del driver seleccionado
+    Driver.incrementActiveOrders(driver_id);
+
+    res.json({ ...updated, driver_name: driver.name });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+module.exports = { getOrders, createOrder, updateOrderStatus, clearTodayOrders, assignDriverManual };
 

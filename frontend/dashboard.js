@@ -32,6 +32,28 @@ var DRIVER_STATUS_LABEL = { Available: 'Disponible', Busy: 'Ocupado', Offline: '
 
 // ── Render Orders ──────────────────────────────────────────────────────────
 
+function buildDriverSelect(orderId, currentDriverId, currentDriverName) {
+  // Solo mostrar opciones con drivers que están Available o Busy (activos)
+  var activeDrivers = _cachedDrivers.filter(function(d) {
+    return d.status === 'Available' || d.status === 'Busy';
+  });
+
+  if (!currentDriverId && activeDrivers.length === 0) {
+    return '<span style="color:var(--text-muted)">Sin asignar</span>';
+  }
+
+  var options = '<option value="">Sin asignar</option>';
+  activeDrivers.forEach(function(d) {
+    options += '<option value="' + d.id + '"' + (d.id == currentDriverId ? ' selected' : '') + '>' + d.name + '</option>';
+  });
+  // Si hay un driver asignado que está offline, igual mostrarlo como opción
+  if (currentDriverId && !activeDrivers.find(function(d) { return d.id == currentDriverId; })) {
+    options += '<option value="' + currentDriverId + '" selected>' + (currentDriverName || 'Driver #' + currentDriverId) + '</option>';
+  }
+
+  return '<select class="status-select driver-assign-select" data-order-id="' + orderId + '">' + options + '</select>';
+}
+
 function renderOrders(orders) {
   var tbody = document.getElementById('ordersBody');
   document.getElementById('ordersCount').textContent = orders.length;
@@ -52,7 +74,7 @@ function renderOrders(orders) {
       return '<option value="' + s + '"' + (s === o.status ? ' selected' : '') + '>' + STATUS_LABELS[s] + '</option>';
     }).join('');
     var phone = o.customer_phone ? '<div style="font-size:.75rem;color:var(--text-muted)">' + o.customer_phone + '</div>' : '';
-    var driverCell = o.driver_name || '<span style="color:var(--text-muted)">Sin asignar</span>';
+    var driverCell = buildDriverSelect(o.id, o.driver_id, o.driver_name);
     return '<tr>' +
       '<td><span class="order-code">' + o.order_code + '</span></td>' +
       '<td><div style="font-weight:500">' + o.customer_name + '</div>' + phone + '</td>' +
@@ -62,8 +84,15 @@ function renderOrders(orders) {
       '<td style="color:var(--text-muted);font-size:.8rem">' + formatTime(o.created_at) + '</td>' +
       '</tr>';
   }).join('');
-  tbody.querySelectorAll('.status-select').forEach(function (sel) {
+  tbody.querySelectorAll('.status-select:not(.driver-assign-select)').forEach(function (sel) {
     sel.addEventListener('change', function (e) { updateStatus(e.target.dataset.id, e.target.value); });
+  });
+  tbody.querySelectorAll('.driver-assign-select').forEach(function (sel) {
+    sel.addEventListener('change', function (e) {
+      var orderId = e.target.dataset.orderId;
+      var driverId = e.target.value;
+      assignDriverToOrder(orderId, driverId);
+    });
   });
 }
 
@@ -122,6 +151,7 @@ async function loadDrivers() {
   try {
     var res = await fetch(API + '/api/drivers');
     var drivers = await res.json();
+    _cachedDrivers = drivers; // guardar para dropdown de asignación
     renderDrivers(drivers);
     if (typeof updateMapDrivers === 'function') updateMapDrivers(drivers);
   } catch (e) { toast('Error al cargar domiciliarios', 'error'); }
@@ -159,6 +189,25 @@ async function seedDrivers() {
   } catch (e) { toast('Error al sembrar drivers', 'error'); }
 }
 
+async function assignDriverToOrder(orderId, driverId) {
+  try {
+    if (!driverId) {
+      toast('Selecciona un domiciliario válido', 'error');
+      await refreshAll(); // revertir el select
+      return;
+    }
+    var res = await fetch(API + '/api/orders/' + orderId + '/driver', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ driver_id: parseInt(driverId) }),
+    });
+    var json = await res.json();
+    if (!res.ok) throw new Error(json.error);
+    toast('✓ Asignado a ' + json.driver_name);
+    await refreshAll();
+  } catch (err) { toast(err.message, 'error'); await refreshAll(); }
+}
+
 async function liberarDriver(id) {
   try {
     var res = await fetch(API + '/api/drivers/' + id + '/liberar', { method: 'PATCH' });
@@ -192,6 +241,7 @@ async function offlineDriver(id) {
 // ── Reporte del día ────────────────────────────────────────────────────────
 
 var _cachedOrders = [];
+var _cachedDrivers = [];  // lista de drivers activos para el dropdown
 
 function downloadDailyReport() {
   var today = new Date().toLocaleDateString('es-CO');
