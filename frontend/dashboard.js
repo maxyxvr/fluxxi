@@ -157,7 +157,10 @@ async function loadDrivers() {
   } catch (e) { toast('Error al cargar domiciliarios', 'error'); }
 }
 
-async function refreshAll() { await Promise.all([loadOrders(), loadDrivers()]); }
+async function refreshAll() {
+  await loadDrivers();  // primero drivers → llena _cachedDrivers
+  await loadOrders();   // luego pedidos → buildDriverSelect ya tiene la lista
+}
 
 async function createOrder(data) {
   var res = await fetch(API + '/api/orders', {
