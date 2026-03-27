@@ -5,6 +5,9 @@ const BASE_LNG = -74.7862;
 var mainMap = null;
 var driverMarkers = {};
 var orderMarkers = {};
+var _cachedOrders = [];
+var _cachedDrivers = [];
+var _addrLat = null, _addrLng = null;
 
 // ── Utils ──────────────────────────────────────────────────────────────────
 
@@ -241,10 +244,59 @@ async function offlineDriver(id) {
   } catch (err) { toast(err.message, 'error'); }
 }
 
-// ── Reporte del día ────────────────────────────────────────────────────────
+// ── Map Updates ────────────────────────────────────────────────────────────
 
-var _cachedOrders = [];
-var _cachedDrivers = [];  // lista de drivers activos para el dropdown
+function updateMapOrders(orders) {
+  if (!mainMap) return;
+  // Limpiar marcadores viejos que ya no están en la lista
+  Object.keys(orderMarkers).forEach(function(id) {
+    if (!orders.find(function(o){ return o.id == id; })) {
+      orderMarkers[id].setMap(null);
+      delete orderMarkers[id];
+    }
+  });
+
+  orders.forEach(function(o) {
+    if (!o.lat || !o.lng) return;
+    var color = o.status === 'Delivered' ? '#2ecc71' : (o.status === 'Cancelled' ? '#e74c3c' : '#f1c40f');
+    if (orderMarkers[o.id]) {
+      orderMarkers[o.id].setPosition({ lat: o.lat, lng: o.lng });
+    } else {
+      orderMarkers[o.id] = new google.maps.Marker({
+        position: { lat: o.lat, lng: o.lng },
+        map: mainMap,
+        title: 'Pedido ' + (o.order_code || o.id),
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 7,
+          fillColor: color,
+          fillOpacity: 1,
+          strokeWeight: 2,
+          strokeColor: '#fff'
+        }
+      });
+    }
+  });
+}
+
+function updateMapDrivers(drivers) {
+  if (!mainMap) return;
+  drivers.forEach(function(d) {
+    if (!d.lat || !d.lng) return;
+    if (driverMarkers[d.id]) {
+      driverMarkers[d.id].setPosition({ lat: d.lat, lng: d.lng });
+    } else {
+      driverMarkers[d.id] = new google.maps.Marker({
+        position: { lat: d.lat, lng: d.lng },
+        map: mainMap,
+        title: d.name,
+        icon: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'
+      });
+    }
+  });
+}
+
+// ── Reporte del día ────────────────────────────────────────────────────────
 
 function downloadDailyReport() {
   var today = new Date().toLocaleDateString('es-CO');
@@ -462,18 +514,25 @@ document.getElementById('btnClearToday').addEventListener('click', clearTodayOrd
 var _btnNewOrder = document.getElementById('btnNewOrder');
 if (_btnNewOrder) _btnNewOrder.addEventListener('click', openModal);
 
-// ── Polling en vivo cada 5 s ───────────────────────────────────────────────
-
-setInterval(refreshAll, 5000);
-
 // ── Init ───────────────────────────────────────────────────────────────────
 
-// Inicializar autocomplete cuando Google Maps cargue
 window.initGoogleMapsCallback = function () {
+  console.log('Google Maps API loaded');
   initMainMap();
   setupAddressAutocomplete();
-  refreshAll(); // Cargar la primera vez y poner los pines en el mapa
+  refreshAll();
 };
 
-// No llamamos a refreshAll() directamente aquí afuera; la llamamos cuando Google Maps está listo (arriba) y cada 5s
+// Listeners adicionales
+document.addEventListener('DOMContentLoaded', function() {
+  var bShow = document.getElementById('btnShowDrivers');
+  if (bShow) {
+    bShow.addEventListener('click', function() {
+      if (typeof renderDriversModal === 'function') renderDriversModal();
+      var m = document.getElementById('driversModal');
+      if (m) m.classList.add('open');
+    });
+  }
+});
 
+setInterval(refreshAll, 10000); // Polling cada 10s para no saturar 
