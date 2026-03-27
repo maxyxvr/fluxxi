@@ -43,19 +43,19 @@
 
       <div class="sidebar-label">Acciones</div>
 
-      <button class="sidebar-link" id="btnNewOrder">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
-        </svg>
-        Nuevo Pedido
-      </button>
-
-      <button class="sidebar-link" id="btnSeed">
+      <button class="sidebar-link" id="btnShowDrivers">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
           <circle cx="9" cy="7" r="4"/>
           <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
           <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        Domiciliarios
+      </button>
+
+      <button class="sidebar-link" id="btnSeed">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
         </svg>
         Sembrar Drivers
       </button>
@@ -302,17 +302,113 @@
 
   <div class="toast-container" id="toastContainer"></div>
 
+  <!-- MODAL DOMICILIARIOS -->
+  <div class="modal-backdrop" id="driversModal">
+    <div class="modal" style="max-width:580px">
+      <div class="modal-header">
+        <h3 style="display:flex;align-items:center;gap:.5rem">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          Resumen de domiciliarios
+        </h3>
+        <button class="modal-close" id="driversModalClose">&times;</button>
+      </div>
+      <div class="modal-body" id="driversModalBody" style="gap:.75rem;max-height:70vh;overflow-y:auto">
+        <p style="color:var(--text-muted);text-align:center">Cargando...</p>
+      </div>
+    </div>
+  </div>
+
   <script src="dashboard.js"></script>
   <script>
-    // Los botones del header (btnDownloadReport, btnClearToday) ya están
-    // escuchados directamente por dashboard.js. Solo necesitamos conectar
-    // el botón extra del header para "Nuevo Pedido".
     document.getElementById('btnNewOrderHeader').addEventListener('click', function() {
       document.getElementById('orderModal').classList.add('open');
     });
-    // Conectar los botones duplicados del panel lateral al mismo handler
     document.getElementById('btnDownloadReportPanel').addEventListener('click', downloadDailyReport);
     document.getElementById('btnClearTodayPanel').addEventListener('click', clearTodayOrders);
+
+    var driversModal = document.getElementById('driversModal');
+    document.getElementById('driversModalClose').addEventListener('click', function() {
+      driversModal.classList.remove('open');
+    });
+    driversModal.addEventListener('click', function(e) {
+      if (e.target === driversModal) driversModal.classList.remove('open');
+    });
+
+    document.getElementById('btnShowDrivers').addEventListener('click', function() {
+      renderDriversModal();
+      driversModal.classList.add('open');
+    });
+
+    function renderDriversModal() {
+      var body = document.getElementById('driversModalBody');
+      var todayStr = new Date().toISOString().slice(0, 10);
+
+      var activeDrivers = _cachedDrivers.filter(function(d) {
+        return d.status !== 'Offline';
+      });
+      var offlineWithOrders = _cachedDrivers.filter(function(d) {
+        if (d.status !== 'Offline') return false;
+        return _cachedOrders.some(function(o) {
+          return o.driver_id == d.id && o.created_at && o.created_at.slice(0,10) === todayStr;
+        });
+      });
+      var allDrivers = activeDrivers.concat(offlineWithOrders);
+
+      if (!allDrivers.length) {
+        body.innerHTML = '<div class="empty-state"><p>No hay domiciliarios activos hoy.</p></div>';
+        return;
+      }
+
+      var STATUS_COLORS  = { Available:'var(--green)', Busy:'var(--yellow)', Offline:'var(--text-muted)', Waiting:'var(--accent)' };
+      var STATUS_ES      = { Available:'Disponible', Busy:'Ocupado', Offline:'Offline', Waiting:'En espera' };
+      var ORDER_LABEL    = { Pending:'Pendiente', Assigned:'Asignado', Picked:'Recogido', Delivered:'Entregado', Cancelled:'Cancelado' };
+      var ORDER_COLOR    = { Pending:'var(--yellow)', Assigned:'var(--blue)', Picked:'var(--purple)', Delivered:'var(--green)', Cancelled:'var(--red)' };
+
+      body.innerHTML = allDrivers.map(function(d) {
+        var ini = d.name.split(' ').map(function(w){ return w[0]; }).join('').slice(0,2).toUpperCase();
+        var dotColor   = STATUS_COLORS[d.status] || 'var(--text-muted)';
+        var statusLabel = STATUS_ES[d.status] || d.status;
+
+        var driverOrders = _cachedOrders.filter(function(o) {
+          return o.driver_id == d.id && o.created_at && o.created_at.slice(0,10) === todayStr;
+        }).sort(function(a,b){ return new Date(a.created_at) - new Date(b.created_at); });
+
+        var ordersHtml = !driverOrders.length
+          ? '<div style="color:var(--text-muted);font-size:.8rem;padding:.4rem 0">Sin pedidos hoy</div>'
+          : driverOrders.map(function(o, i) {
+              var color = ORDER_COLOR[o.status] || 'var(--text-muted)';
+              var label = ORDER_LABEL[o.status] || o.status;
+              var time  = o.created_at ? new Date(o.created_at).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}) : '--';
+              return '<div style="display:flex;align-items:center;gap:.6rem;padding:.45rem 0;border-bottom:1px solid var(--border)">'
+                + '<span style="color:var(--text-muted);font-size:.75rem;min-width:18px">' + (i+1) + '.</span>'
+                + '<span style="font-family:monospace;font-weight:700;color:var(--accent);font-size:.8rem">' + o.order_code + '</span>'
+                + '<span style="flex:1;font-size:.82rem;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + o.customer_name + '</span>'
+                + '<span style="font-size:.72rem;font-weight:700;padding:.15rem .5rem;border-radius:999px;background:' + color.replace('var(','').replace(')','') + '22;color:' + color + '">' + label + '</span>'
+                + '<span style="font-size:.75rem;color:var(--text-muted)">' + time + '</span>'
+                + '</div>';
+            }).join('');
+
+        var delivered = driverOrders.filter(function(o){ return o.status === 'Delivered'; }).length;
+        var total     = driverOrders.length;
+
+        return '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:.5rem">'
+          + '<div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem">'
+          + '<div style="width:40px;height:40px;border-radius:50%;background:var(--accent-glow);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;color:var(--accent);flex-shrink:0">' + ini + '</div>'
+          + '<div style="flex:1">'
+          + '<div style="font-weight:700;font-size:.95rem">' + d.name + '</div>'
+          + '<div style="font-size:.75rem;margin-top:.1rem">'
+          + '<span style="color:' + dotColor + ';font-weight:600">● ' + statusLabel + '</span>'
+          + '<span style="color:var(--text-muted);margin-left:.75rem">' + delivered + ' entregados / ' + total + ' total hoy</span>'
+          + '</div></div></div>'
+          + '<div>' + ordersHtml + '</div>'
+          + '</div>';
+      }).join('');
+    }
   </script>
   <script
     src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCAswimK497YgHgRK80ebrHhuiu0-CEV8g&libraries=places&language=es&region=CO&callback=initGoogleMapsCallback"

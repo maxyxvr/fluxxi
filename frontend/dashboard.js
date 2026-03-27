@@ -458,6 +458,9 @@ document.getElementById('btnLogout').addEventListener('click', function () {
 });
 document.getElementById('btnDownloadReport').addEventListener('click', downloadDailyReport);
 document.getElementById('btnClearToday').addEventListener('click', clearTodayOrders);
+// btnNewOrder fue movido al header; el listener queda en el HTML inline
+var _btnNewOrder = document.getElementById('btnNewOrder');
+if (_btnNewOrder) _btnNewOrder.addEventListener('click', openModal);
 
 // ── Polling en vivo cada 5 s ───────────────────────────────────────────────
 
