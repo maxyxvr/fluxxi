@@ -420,7 +420,9 @@ function closeModal() {
   b.disabled = false; b.textContent = 'Crear pedido';
 }
 
-document.getElementById('btnNewOrder').addEventListener('click', openModal);
+var _btnNewOrder1 = document.getElementById('btnNewOrder');
+if (_btnNewOrder1) _btnNewOrder1.addEventListener('click', openModal);
+
 document.getElementById('modalClose').addEventListener('click', closeModal);
 document.getElementById('modalCancel').addEventListener('click', closeModal);
 modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
