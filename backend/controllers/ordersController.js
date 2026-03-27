@@ -104,9 +104,9 @@ async function createOrder(req, res) {
       lat: coords ? coords.lat : null,
       lng: coords ? coords.lng : null,
     });
-    const driver = assignDriver(order.id);
+    // Sin auto-asignación: el admin elige el domiciliario manualmente
     const updated = Order.getById(order.id);
-    res.status(201).json({ ...updated, driver_name: driver ? driver.name : null });
+    res.status(201).json({ ...updated, driver_name: null });
   } catch (err) {
     if (err.message.includes('UNIQUE')) {
       return res.status(409).json({ error: `El código de pedido '${order_code}' ya existe` });
