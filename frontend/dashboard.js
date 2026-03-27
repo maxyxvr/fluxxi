@@ -244,58 +244,6 @@ async function offlineDriver(id) {
   } catch (err) { toast(err.message, 'error'); }
 }
 
-// ── Map Updates ────────────────────────────────────────────────────────────
-
-function updateMapOrders(orders) {
-  if (!mainMap) return;
-  // Limpiar marcadores viejos que ya no están en la lista
-  Object.keys(orderMarkers).forEach(function(id) {
-    if (!orders.find(function(o){ return o.id == id; })) {
-      orderMarkers[id].setMap(null);
-      delete orderMarkers[id];
-    }
-  });
-
-  orders.forEach(function(o) {
-    if (!o.lat || !o.lng) return;
-    var color = o.status === 'Delivered' ? '#2ecc71' : (o.status === 'Cancelled' ? '#e74c3c' : '#f1c40f');
-    if (orderMarkers[o.id]) {
-      orderMarkers[o.id].setPosition({ lat: o.lat, lng: o.lng });
-    } else {
-      orderMarkers[o.id] = new google.maps.Marker({
-        position: { lat: o.lat, lng: o.lng },
-        map: mainMap,
-        title: 'Pedido ' + (o.order_code || o.id),
-        icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: 7,
-          fillColor: color,
-          fillOpacity: 1,
-          strokeWeight: 2,
-          strokeColor: '#fff'
-        }
-      });
-    }
-  });
-}
-
-function updateMapDrivers(drivers) {
-  if (!mainMap) return;
-  drivers.forEach(function(d) {
-    if (!d.lat || !d.lng) return;
-    if (driverMarkers[d.id]) {
-      driverMarkers[d.id].setPosition({ lat: d.lat, lng: d.lng });
-    } else {
-      driverMarkers[d.id] = new google.maps.Marker({
-        position: { lat: d.lat, lng: d.lng },
-        map: mainMap,
-        title: d.name,
-        icon: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'
-      });
-    }
-  });
-}
-
 // ── Reporte del día ────────────────────────────────────────────────────────
 
 function downloadDailyReport() {
@@ -514,25 +462,63 @@ document.getElementById('btnClearToday').addEventListener('click', clearTodayOrd
 var _btnNewOrder = document.getElementById('btnNewOrder');
 if (_btnNewOrder) _btnNewOrder.addEventListener('click', openModal);
 
+// ── Polling en vivo cada 5 s ───────────────────────────────────────────────
+
+setInterval(refreshAll, 5000);
+
+// ── Autocomplete ─────────────────────────────────────────────────────────────
+
+function setupAddressAutocomplete() {
+  var input = document.getElementById('fieldAddress');
+  if (!input || !window.google || !google.maps || !google.maps.places) return;
+
+  var autocomplete = new google.maps.places.Autocomplete(input, {
+    componentRestrictions: { country: 'co' },
+    fields: ['geometry', 'formatted_address', 'name'],
+    types: ['address'],
+  });
+
+  // Bias hacia Soledad/Barranquilla Atlántico
+  var bounds = new google.maps.LatLngBounds(
+    { lat: 10.75, lng: -74.95 },
+    { lat: 11.10, lng: -74.65 }
+  );
+  autocomplete.setBounds(bounds);
+
+  autocomplete.addListener('place_changed', function () {
+    var place = autocomplete.getPlace();
+    if (!place.geometry || !place.geometry.location) {
+      toast('No se encontró ubicación exacta. Por favor escribe de nuevo o sé más específico.', 'error');
+      return;
+    }
+    _addrLat = place.geometry.location.lat();
+    _addrLng = place.geometry.location.lng();
+    toast('✓ Ubicación confirmada');
+  });
+
+  // Soporte para coordenadas pegadas directamente (link Google Maps)
+  input.addEventListener('keydown', function (e) {
+    var q = e.target.value.trim();
+    if (e.key === 'Enter' && q) {
+      var coordMatch = q.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/);
+      if (coordMatch) {
+        e.preventDefault();
+        _addrLat = parseFloat(coordMatch[1]);
+        _addrLng = parseFloat(coordMatch[2]);
+        toast('✓ Coordenadas importadas');
+      }
+    }
+  });
+}
+
 // ── Init ───────────────────────────────────────────────────────────────────
 
+// Inicializar autocomplete cuando Google Maps cargue
 window.initGoogleMapsCallback = function () {
-  console.log('Google Maps API loaded');
   initMainMap();
   setupAddressAutocomplete();
-  refreshAll();
+  refreshAll(); // Cargar la primera vez y poner los pines en el mapa
 };
 
-// Listeners adicionales
-document.addEventListener('DOMContentLoaded', function() {
-  var bShow = document.getElementById('btnShowDrivers');
-  if (bShow) {
-    bShow.addEventListener('click', function() {
-      if (typeof renderDriversModal === 'function') renderDriversModal();
-      var m = document.getElementById('driversModal');
-      if (m) m.classList.add('open');
-    });
-  }
-});
+// No llamamos a refreshAll() directamente aquí afuera; la llamamos cuando Google Maps está listo (arriba) y cada 5s
 
-setInterval(refreshAll, 10000); // Polling cada 10s para no saturar 
